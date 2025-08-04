@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 文档元数据设置 -->
+    <meta charset="UTF-8">
+    <!-- 响应式视口设置，确保在移动设备上正确显示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MFI计算器 - Quantibrite微珠分析</title>
+    <!-- 引入Chart.js库用于数据可视化 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 样式定义开始 -->
+    <style>
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* 确保元素尺寸包含内边距和边框 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* 页面基础样式 */
+        body {
+            background-color: #f5f7fa; /* 浅灰色背景提高可读性 */
+            color: #333; /* 深灰色文本颜色 */
+            line-height: 1.6; /* 行高增加可读性 */
+        }
+        
+        /* 主容器样式 - 响应式宽度设置 */
+        .container {
+            max-width: 1400px; /* 最大宽度限制 */
+            margin: 0 auto; /* 水平居中 */
+            padding: 2%; /* 使用百分比设置内边距，适应不同屏幕 */
+            width: 96%; /* 控制容器宽度，留出边距 */
+        }
+        
+        /* 页面头部样式 */
+        header {
+            text-align: center; /* 文本居中 */
+            margin-bottom: 3%; /* 底部外边距 */
+            padding: 3%; /* 内边距 */
+            background: linear-gradient(135deg, #2c6fbb, #1a4f8c); /* 渐变背景 */
+            color: white; /* 白色文本 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+        }
+        
+        /* 标题样式 - 使用clamp()实现响应式字体大小 */
+        header h1 {
+            font-size: clamp(1.4rem, 4vw, 2.2rem); /* 响应式字体大小：最小1.4rem，最大2.2rem */
+            margin-bottom: 10px; /* 底部外边距 */
+        }
+        
+        /* 副标题样式 */
+        header p {
+            font-size: clamp(0.85rem, 2vw, 1.1rem); /* 响应式字体大小 */
+            opacity: 0.9; /* 轻微透明效果 */
+            max-width: 800px; /* 最大宽度限制 */
+            margin: 0 auto; /* 水平居中 */
+        }
+        
+        /* 内容区域布局 - 使用Flexbox实现两列布局 */
+        .content-wrapper {
+            display: flex; /* 弹性布局 */
+            flex-direction: row; /* 默认为横向排列（两列布局） */
+            gap: 3%; /* 列间距 */
+        }
+        
+        /* 控制面板样式 - 左侧数据输入区域 */
+        .control-panel {
+            width: 50%; /* 默认占一半宽度 */
+            background: white; /* 白色背景 */
+            padding: 3%; /* 内边距 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* 阴影效果 */
+        }
+        
+        /* 可视化区域样式 - 右侧图表区域 */
+        .visualization {
+            width: 50%; /* 默认占一半宽度 */
+            background: white; /* 白色背景 */
+            padding: 3%; /* 内边距 */
+            border-radius: 10px; /* 圆角边框 */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* 阴影效果 */
+            display: flex; /* 弹性布局 */
+            flex-direction: column; /* 纵向排列 */
+        }
+        
+        /* 面板标题样式 */
+        .panel-title {
+            font-size: 1.5rem; /* 字体大小 */
+            color: #1a4f8c; /* 蓝色文本 */
+            margin-bottom: 25px; /* 底部外边距 */
+            padding-bottom: 12px; /* 底部内边距 */
+            border-bottom: 2px solid #e9ecef; /* 底部边框 */
+            display: flex; /* 弹性布局 */
+            align-items: center; /* 垂直居中 */
+            gap: 10px; /* 元素间距 */
+        }
+        
+        /* 面板标题图标样式 */
+        .panel-title i {
+            font-size: 1.8rem; /* 图标大小 */
+        }
+        
+        /* 输入区域样式 */
+        .input-section {
+            margin-bottom: 30px; /* 底部外边距 */
+        }
+        
+        /* 输入区域标题样式 */
+        .input-section h3 {
+            font-size: 1.2rem; /* 字体大小 */
+            color: #2c6fbb; /* 蓝色文本 */
+            margin-bottom: 15px; /* 底部外边距 */
+            display: flex; /* 弹性布局 */
+            align-items: center; /* 垂直居中 */
+            gap: 8px; /* 元素间距 */
+        }
+        
+        /* 输入网格布局 - 使用CSS Grid实现三列布局 */
+        .input-grid {
+            display: grid; /* 网格布局 */
+            grid-template-columns: 20% 40% 40%; /* 使用百分比定义列宽：类型列20%，两个数据列各40% */
+            gap: 2%; /* 列间距 */
+            align-items: center; /* 垂直居中 */
+            width: 100%; /* 占满容器宽度 */
+        }
+        
+        /* 输入网格标签样式 */
+        .input-grid label {
+            font-weight: 600; /* 加粗文本 */
+            color: #495057; /* 深灰色文本 */
+        }
+        
+        /* 输入框样式 */
+        .input-grid input {
+            width: 100%; /* 输入框占满容器宽度 */
+            padding: 10px 12px; /* 内边距 */
+            border: 1px solid #ced4da; /* 边框 */
+            border-radius: 6px; /* 圆角边框 */
+            font-size: 1rem; /* 字体大小 */
+            transition: border-color 0.2s; /* 过渡效果 */
+            box-sizing: border-box; /* 确保尺寸包含内边距和边框 */
+        }
+        
+        /* 输入框焦点状态样式 */
+        .input-grid input:focus {
+            border-color: #2c6fbb; /* 焦点时边框颜色 */
+            outline: none; /* 移除默认轮廓 */
+            box-shadow: 0 0 0 3px rgba(44, 111, 187, 0.2); /* 焦点时阴影效果 */
+        }
+        
+        /* 微珠数据行样式 - 使用contents保持网格结构 */
+        .bead-row {
+            display: contents; /* 内容显示，保持父元素的网格结构 */
+        }
+        
+        /* 新样本FL2值输入区域样式 - 使用Flexbox布局 */
+        .new-fl2-input {
+            display: flex; /* 弹性布局 */
+            gap: 3%; /* 元素间距 */
+            align-items: center; /* 垂直居中 */
+            margin-top: 15px; /* 顶部外边距 */
+            width: 100%; /* 占满容器宽度 */
+        }
+        
+        /* 新样本FL2值标签样式 */
+        .new-fl2-input label {
+            font-weight: 600; /* 加粗文本 */
+            flex: 0 0 25%; /* 使用百分比替代固定宽度，不伸缩，基础宽度25% */
+            color: #495057; /* 深灰色文本 */
+        }
+        
+        /* 新样本FL2值输入框样式 */
+        .new-fl2-input input {
+            flex: 1; /* 占用剩余空间 */
+            width: 75%; /* 宽度 */
+            padding: 12px 15px; /* 内边距 */
+            border: 1px solid #ced4da; /* 边框 */
+            border-radius: 6px; /* 圆角边框 */
+            font-size: 1.1rem; /* 字体大小 */
+            box-sizing: border-box; /* 确保尺寸包含内边距和边框 */
+        }
+        
+        /* 计算按钮样式 */
+        .btn-calculate {
+            background: linear-gradient(to right, #1a4f8c, #2c6fbb); /* 渐变背景 */
+            color: white; /* 白色文本 */
+            border: none; /* 无边框 */
+            padding: 14px 28px; /* 内边距 */
+            font-size: 1.1rem; /* 字体大小 */
+            font-weight: 600; /* 加粗文本 */
+            border-radius: 6px; /* 圆角边框 */
+            cursor: pointer; /* 鼠标指针样式 */
+            transition: all 0.3s; /* 过渡效果 */
+            display: block; /* 块级元素 */
+            width: 100%; /* 占满容器宽度 */
+            margin: 20px 0; /* 外边距 */
+            letter-spacing: 0.5px; /* 字间距 */
+        }
+        
+        /* 计算按钮悬停状态样式 */
+        .btn-calculate:hover {
+            background: linear-gradient(to right, #163e71, #255ca5); /* 深色渐变背景 */
+            transform: translateY(-2px); /* 上移效果 */
+            box-shadow: 0 4px 10px rgba(26, 79, 140, 0.3); /* 阴影效果 */
+        }
+        
+        /* 计算按钮激活状态样式 */
+        .btn-calculate:active {
+            transform: translateY(0); /* 恢复位置 */
+        }
+        
+        /* 重置按钮样式 */
+        .btn-reset {
+            background: #e9ecef; /* 浅灰色背景 */
+            color: #495057; /* 深灰色文本 */
+            border: none; /* 无边框 */
+            padding: 10px 18px; /* 内边距 */
+            border-radius: 6px; /* 圆角边框 */
+            cursor: pointer; /* 鼠标指针样式 */
+            transition: all 0.2s; /* 过渡效果 */
+            font-weight: 500; /* 加粗文本 */
+            width: 100%; /* 占满容器宽度 */
+            border: 1px solid #ced4da; /* 边框 */
+        }
+        
+        /* 重置按钮悬停状态样式 */
+        .btn-reset:hover {
+            background: #dee2e6; /* 深灰色背景 */
+        }
+        
+        /* 结果区域样式 */
+        .result-section {
+            background: #f8f9fa; /* 浅灰色背景 */
+            border-radius: 8px; /* 圆角边框 */
+            padding: 20px; /* 内边距 */
+            margin-top: 20px; /* 顶部外边距 */
+            border: 1px solid #e9ecef; /* 边框 */
+        }
+        
+        /* 结果区域标题样式 */
+        .result-section h3 {
+            font-size: 1.3rem; /* 字体大小 */
+            color: #1a4f8c; /* 蓝色文本 */
+            margin-bottom: 15px; /* 底部外边距 */
+            text-align: center; /* 文本居中 */
+        }
+        
+        /* 结果网格布局 - 使用CSS Grid实现两列布局 */
+        .result-grid {
+            display: grid; /* 网格布局 */
+            grid-template-columns: 1fr 1fr; /* 两列等宽布局 */
+            gap: 15px; /* 元素间距 */
+        }
+        
+        /* 结果框样式 */
+        .result-box {
+            background: white; /* 白色背景 */
+            border: 1px solid #dee2e6; /* 边框 */
+            border-radius: 6px; /* 圆角边框 */
+            padding: 15px; /* 内边距 */
+            text-align: center; /* 文本居中 */
+        }
+        
+        /* 结果框标题样式 */
+        .result-box h4 {
+            font-size: 0.9rem; /* 字体大小 */
+            color: #6c757d; /* 灰色文本 */
+            margin-bottom: 8px; /* 底部外边距 */
+        }
+        
+        /* 结果框内容样式 */
+        .result-box p {
+            font-size: 1.4rem; /* 字体大小 */
+            font-weight: 700; /* 加粗文本 */
+            color: #1a4f8c; /* 蓝色文本 */
+        }
+        
+        /* 新样本结果框样式 - 跨越两列 */
+        .new-result {
+            grid-column: 1 / -1; /* 横跨所有列 */
+            background: #e7f5ff; /* 浅蓝色背景 */
+            border: 1px solid #a5d8ff; /* 蓝色边框 */
+            margin-top: 10px; /* 顶部外边距 */
+            padding: 20px; /* 内边距 */
+        }
+        
+        /* 新样本结果框标题样式 */
+        .new-result h4 {
+            color: #1864ab; /* 蓝色文本 */
+        }
+        
+        /* 新样本结果框内容样式 */
+        .new-result p {
+            color: #1864ab; /* 蓝色文本 */
+            font-size: 1.5rem; /* 字体大小 */
+        }
+        
+        /* 图表容器样式 */
+        .chart-container {
+            flex: 1; /* 占用剩余空间 */
+            min-height: 400px; /* 最小高度 */
+            position: relative; /* 相对定位，用于Chart.js绘制 */
+        }
+        
+        /* 页脚样式 */
+        footer {
+            text-align: center; /* 文本居中 */
+            margin-top: 40px; /* 顶部外边距 */
+            padding: 20px; /* 内边距 */
+            color: #6c757d; /* 灰色文本 */
+            font-size: 0.9rem; /* 字体大小 */
+            border-top: 1px solid #e9ecef; /* 顶部边框 */
+        }
+        
+        /* 警告框样式 */
+        .warning-box {
+            background: #fff3cd; /* 浅黄色背景 */
+            border-left: 5px solid #e6a000; /* 左侧黄色边框 */
+            padding: 15px; /* 内边距 */
+            border-radius: 4px; /* 圆角边框 */
+            margin-top: 20px; /* 顶部外边距 */
+            font-size: 0.9rem; /* 字体大小 */
+        }
+        
+        /* 移动端响应式布局调整 - 针对小屏幕设备 */
+        @media (max-width: 768px) {
+            /* 调整标题在移动端的大小和布局 */
+            header {
+                padding: 15px; /* 减小内边距 */
+                margin-bottom: 20px; /* 减小底部外边距 */
+            }
+            
+            header h1 {
+                font-size: 1.4rem; /* 减小标题字体大小 */
+                margin-bottom: 5px; /* 减小底部外边距 */
+            }
+
+            header p {
+                font-size: 0.85rem; /* 减小副标题字体大小 */
+            }
+
+            /* 移动端按钮样式调整 */
+            .btn-calculate, .btn-reset {
+                font-size: 1rem; /* 减小字体大小 */
+                padding: 12px; /* 调整内边距 */
+                width: 100%; /* 按钮占满宽度 */
+            }
+            
+            /* 优化移动端标题显示 */
+            .input-section h3 {
+                display: flex; /* 弹性布局 */
+                justify-content: space-between; /* 两端对齐 */
+                align-items: center; /* 垂直居中 */
+                padding: 8px 10px; /* 内边距 */
+                background-color: #f0f4f8; /* 浅蓝色背景 */
+                border-radius: 6px; /* 圆角边框 */
+                margin-bottom: 12px; /* 底部外边距 */
+                font-size: 1rem; /* 字体大小 */
+            }
+            
+            /* 保持输入网格结构一致，只调整比例 */
+            .input-grid {
+                grid-template-columns: 25% 37.5% 37.5%; /* 移动端调整列宽比例 */
+                gap: 2%; /* 列间距 */
+                font-size: 0.9rem; /* 减小字体大小 */
+            }
+            
+            /* 移动端输入框样式调整 */
+            .input-grid input {
+                padding: 8px; /* 减小内边距 */
+                font-size: 0.9rem; /* 减小字体大小 */
+            }
+            
+            /* 调整容器边距 */
+            .container {
+                padding: 2%; /* 内边距 */
+                width: 96%; /* 宽度 */
+            }
+
+            /* 调整面板内边距 */
+            .control-panel, .visualization {
+                padding: 4%; /* 增加内边距比例 */
+            }
+            
+            /* 调整新FL2输入框比例 */
+            .new-fl2-input label {
+                flex: 0 0 30%; /* 增加标签宽度比例 */
+            }
+            
+            .new-fl2-input input {
+                width: 70%; /* 减小输入框宽度比例 */
+            }
+        }
+        
+        /* 移动端结果区域响应式布局调整 */
+        @media (max-width: 768px) {
+            /* 抗体结合比输入框样式保持一致 */
+            .input-section {
+                margin-bottom: 25px; /* 减小底部外边距 */
+            }
+            
+            /* 结果区域布局调整 - 从两列变为单列 */
+            .result-grid {
+                grid-template-columns: 1fr; /* 移动端单列布局 */
+                gap: 10px; /* 减小元素间距 */
+            }
+
+            /* 结果框样式调整 */
+            .result-box {
+                padding: 12px; /* 减小内边距 */
+                font-size: 0.9rem; /* 减小字体大小 */
+            }
+
+            .result-box h4 {
+                font-size: 0.8rem; /* 减小标题字体大小 */
+            }
+
+            .result-box p {
+                font-size: 1.2rem; /* 减小内容字体大小 */
+            }
+            
+            /* 控制面板和可视化区域布局调整 - 从横向排列变为纵向排列 */
+            .content-wrapper {
+                flex-direction: column; /* 移动端改为竖向排列 */
+                gap: 15px; /* 元素间距 */
+            }
+            
+            /* 控制面板和可视化区域宽度调整 */
+            .control-panel, .visualization {
+                width: 100%; /* 移动端占满宽度 */
+            }
+            
+            /* 面板标题样式调整 */
+            .panel-title {
+                font-size: 1.3rem; /* 减小字体大小 */
+                margin-bottom: 15px; /* 减小底部外边距 */
+            }
+            
+            /* 图表容器响应式高度调整 */
+            .chart-container {
+                height: 50vh; /* 使用视口高度的百分比，更灵活的响应式高度 */
+                min-height: 250px; /* 最小高度限制 */
+            }
+            
+            /* 按钮样式优化 - 使用百分比定义内边距 */
+            .btn-calculate {
+                padding: 3% 5%; /* 使用百分比定义内边距 */
+                font-size: 1rem; /* 减小字体大小 */
+            }
+            
+            .btn-reset {
+                padding: 2.5% 4%; /* 使用百分比定义内边距 */
+                font-size: 0.9rem; /* 减小字体大小 */
+            }
+            
+            /* 警告框样式调整 */
+            .warning-box {
+                padding: 3%; /* 使用百分比定义内边距 */
+                font-size: 0.8rem; /* 减小字体大小 */
+            }
+            
+            /* 页脚样式调整 */
+            footer {
+                margin-top: 5%; /* 使用百分比定义外边距 */
+                padding: 3%; /* 使用百分比定义内边距 */
+                font-size: 0.8rem; /* 减小字体大小 */
+            }
+            
+            /* 设置输入框最小触摸区域 - 移动端触摸优化 */
+            input[type="number"] {
+                min-height: 40px;  /* 确保足够的触摸区域 */
+                -webkit-appearance: none;  /* 移除iOS默认样式 */
+                margin: 0;  /* 移除默认边距 */
+            }
+        }
+        
+        /* 优化标题行样式 - 用于表格式数据的标题行 */
+        .header-row {
+            display: grid; /* 网格布局 */
+            grid-template-columns: repeat(3, 1fr); /* 平均分为三列 */
+            text-align: center; /* 文本居中 */
+            font-weight: bold; /* 加粗文本 */
+            font-size: 1rem; /* 字体大小 */
+            color: #495057; /* 深灰色文本 */
+            margin-bottom: 15px; /* 增加标题与数据行的间距 */
+            padding: 10px 0; /* 增加标题行的内边距 */
+        }
+    </style>
+    <!-- 样式定义结束 -->
+</head>
+<body>
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 页面头部 -->
+        <header>
+            <h1>MFI计算器与可视化工具</h1>
+            <p>基于BD Quantibrite™ Beads试剂盒的MFI与ABC定量关系构建工具</p>
+        </header>
+        
+        <!-- 主要内容区域 - 两列布局 -->
+        <div class="content-wrapper">
+            <!-- 左侧控制面板 -->
+            <div class="control-panel">
+                <div class="panel-title">
+                    <span>控制面板</span>
+                </div>
+                
+                <!-- Quantibrite微珠数据输入区域 -->
+                <div class="input-section">
+                    <h3>Quantibrite微珠数据输入</h3>
+                    <!-- 使用CSS Grid创建的输入表格 -->
+                    <div class="input-grid">
+                        <!-- 表头 -->
+                        <label>微珠类型</label>
+                        <label>FL2 几何均值</label>
+                        <label>PE分子/微珠</label>
+                        
+                        <!-- Low Bead - 低强度微珠 -->
+                        <div>Low</div>
+                        <div><input type="number" id="fl2-low" step="0.01" placeholder="FL2值"></div>
+                        <div><input type="number" id="pe-low" placeholder="PE分子数"></div>
+                        
+                        <!-- Med-Low Bead - 中低强度微珠 -->
+                        <div>Med-Low</div>
+                        <div><input type="number" id="fl2-medlow" step="0.01" placeholder="FL2值"></div>
+                        <div><input type="number" id="pe-medlow" placeholder="PE分子数"></div>
+                        
+                        <!-- Med-High Bead - 中高强度微珠 -->
+                        <div>Med-High</div>
+                        <div><input type="number" id="fl2-medhigh" step="0.01" placeholder="FL2值"></div>
+                        <div><input type="number" id="pe-medhigh" placeholder="PE分子数"></div>
+                        
+                        <!-- High Bead - 高强度微珠 -->
+                        <div>High</div>
+                        <div><input type="number" id="fl2-high" step="0.01" placeholder="FL2值"></div>
+                        <div><input type="number" id="pe-high" placeholder="PE分子数"></div>
+                    </div>
+                </div>
+                
+                <!-- 抗体结合比输入区域 -->
+                <div class="input-section">
+                    <h3>抗体结合比</h3>
+                    <div class="input-grid">
+                        <label>PE:抗体比率</label>
+                        <div><input type="number" id="antibody-ratio" value="1.0" step="0.1" min="0.1" placeholder="比率值"></div>
+                        <div></div> <!-- 保持网格结构一致的空单元格 -->
+                    </div>
+                </div>
+                
+                <!-- 新样本FL2值输入区域 -->
+                <div class="input-section">
+                    <h3>新样本FL2值</h3>
+                    <div class="new-fl2-input">
+                        <label>新FL2值:</label>
+                        <input type="number" id="new-fl2" value="500" placeholder="输入新样本的FL2值">
+                    </div>
+                </div>
+                
+                <!-- 操作按钮区域 -->
+                <button id="calculate-btn" class="btn-calculate">计算MFI与ABC</button>
+                <button id="reset-btn" class="btn-reset">重置为默认值</button>
+                
+                <!-- 计算结果显示区域 -->
+                <div class="result-section">
+                    <h3>计算结果</h3>
+                    <div class="result-grid">
+                        <!-- 回归斜率显示 -->
+                        <div class="result-box">
+                            <h4>回归斜率 (m)</h4>
+                            <p id="slope-value">0.9971</p>
+                        </div>
+                        <!-- 回归截距显示 -->
+                        <div class="result-box">
+                            <h4>回归截距 (c)</h4>
+                            <p id="intercept-value">-1.7247</p>
+                        </div>
+                        <!-- 相关系数显示 -->
+                        <div class="result-box">
+                            <h4>相关系数 (R²)</h4>
+                            <p id="r2-value">0.997</p>
+                        </div>
+                        <!-- 回归方程显示 -->
+                        <div class="result-box">
+                            <h4>回归方程</h4>
+                            <p>log<sub>10</sub>(FL2) = m·log<sub>10</sub>(PE) + c</p>
+                        </div>
+                        
+                        <!-- 新样本计算结果显示 - 横跨两列 -->
+                        <div class="result-box new-result">
+                            <h4>新样本计算结果</h4>
+                            <p id="new-result-value">27,334 PE分子数</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 重要提示区域 -->
+                <div class="warning-box">
+                    <strong>重要提示:</strong> <br>
+                    1. 微珠与细胞样本需在相同仪器设置下运行<br>
+                    2. 更换试剂盒批号时需更新PE分子数<br>
+                    3. 回归方程相关系数应接近1 (R² > 0.99)
+                </div>
+            </div>
+            
+            <!-- 右侧可视化区域 -->
+            <div class="visualization">
+                <div class="panel-title">
+                    <span>数据可视化</span>
+                </div>
+                <!-- 图表容器 -->
+                <div class="chart-container">
+                    <canvas id="regression-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer>
+            <p>© 2025 MFI计算器 | 基于BD Quantibrite™ Beads试剂盒文档开发 | 使用Chart.js绘制图表</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript代码部分 -->
+    <script>
+        // 初始化图表对象
+        const ctx = document.getElementById('regression-chart').getContext('2d');
+        let regressionChart = null;
+        
+        // 初始化默认微珠数据
+        let beadData = [
+            { type: 'Low', fl2: 32.28, pe: 1700 },       // 低强度微珠
+            { type: 'MedLow', fl2: 250.48, pe: 14200 },  // 中低强度微珠
+            { type: 'MedHigh', fl2: 699.69, pe: 39400 }, // 中高强度微珠
+            { type: 'High', fl2: 2530.73, pe: 133400 }   // 高强度微珠
+        ];
+        
+        /**
+         * 计算以10为底的对数
+         * @param {number} val - 输入值
+         * @return {number} 对数结果
+         */
+        function log10(val) {
+            return Math.log10(val);
+        }
+        
+        /**
+         * 计算线性回归并更新结果
+         * 实现了对数线性回归：log10(FL2) = m·log10(PE) + c
+         */
+        function calculateRegression() {
+            // 从表单获取微珠数据
+            beadData[0].fl2 = parseFloat(document.getElementById('fl2-low').value);
+            beadData[0].pe = parseFloat(document.getElementById('pe-low').value);
+            beadData[1].fl2 = parseFloat(document.getElementById('fl2-medlow').value);
+            beadData[1].pe = parseFloat(document.getElementById('pe-medlow').value);
+            beadData[2].fl2 = parseFloat(document.getElementById('fl2-medhigh').value);
+            beadData[2].pe = parseFloat(document.getElementById('pe-medhigh').value);
+            beadData[3].fl2 = parseFloat(document.getElementById('fl2-high').value);
+            beadData[3].pe = parseFloat(document.getElementById('pe-high').value);
+            
+            // 获取抗体比率和新样本FL2值
+            const ratio = parseFloat(document.getElementById('antibody-ratio').value);
+            const newFl2 = parseFloat(document.getElementById('new-fl2').value);
+            
+            // 转换为log10值用于线性回归
+            const logFl2 = beadData.map(d => log10(d.fl2));
+            const logPe = beadData.map(d => log10(d.pe));
+            
+            // 计算平均值（用于回归计算）
+            const meanLogFl2 = logFl2.reduce((sum, val) => sum + val, 0) / logFl2.length;
+            const meanLogPe = logPe.reduce((sum, val) => sum + val, 0) / logPe.length;
+            
+            // 计算回归斜率 (m) - 使用最小二乘法
+            let numerator = 0;
+            let denominator = 0;
+            
+            for (let i = 0; i < beadData.length; i++) {
+                numerator += (logPe[i] - meanLogPe) * (logFl2[i] - meanLogFl2);
+                denominator += Math.pow(logPe[i] - meanLogPe, 2);
+            }
+            
+            const slope = numerator / denominator;
+            
+            // 计算回归截距 (c)
+            const intercept = meanLogFl2 - slope * meanLogPe;
+            
+            // 计算决定系数 R²（拟合优度）
+            let ssRes = 0; // 残差平方和
+            let ssTot = 0; // 总离差平方和
+            
+            for (let i = 0; i < beadData.length; i++) {
+                const predictedLogFl2 = slope * logPe[i] + intercept; // 预测值
+                ssRes += Math.pow(logFl2[i] - predictedLogFl2, 2);    // 残差平方
+                ssTot += Math.pow(logFl2[i] - meanLogFl2, 2);         // 离差平方
+            }
+            
+            const r2 = 1 - (ssRes / ssTot); // R²计算公式
+            
+            // 更新结果面板显示
+            document.getElementById('slope-value').textContent = slope.toFixed(4);
+            document.getElementById('intercept-value').textContent = intercept.toFixed(4);
+            document.getElementById('r2-value').textContent = r2.toFixed(3);
+            
+            // 计算新样本的PE分子数和ABC值
+            if (!isNaN(newFl2) && newFl2 > 0) {
+                const log10Fl2 = log10(newFl2);
+                // 使用回归方程求解PE值：log10(FL2) = m·log10(PE) + c
+                // 转换为：log10(PE) = (log10(FL2) - c) / m
+                const log10Pe = (log10Fl2 - intercept) / slope;
+                const peValue = Math.pow(10, log10Pe); // 转换回线性值
+                
+                // 根据抗体比率计算ABC值
+                let abcValue = peValue;
+                if (ratio !== 1.0) {
+                    abcValue = peValue / ratio; // ABC = PE分子数 / 抗体比率
+                    document.getElementById('new-result-value').innerHTML = 
+                        `${peValue.toLocaleString()} PE分子数<br><small>(ABC = ${abcValue.toLocaleString()})</small>`;
+                } else {
+                    document.getElementById('new-result-value').innerHTML = 
+                        `${abcValue.toLocaleString()} PE分子数 (ABC)`;
+                }
+            }
+            
+            // 更新图表显示
+            updateChart(logPe, logFl2, slope, intercept, newFl2);
+        }
+        
+        /**
+         * 更新图表显示函数
+         * @param {Array} logPeVals - PE分子数的对数值数组
+         * @param {Array} logFl2Vals - FL2几何均值的对数值数组
+         * @param {number} slope - 回归斜率
+         * @param {number} intercept - 回归截距
+         * @param {number} newFl2 - 新样本FL2值
+         */
+        function updateChart(logPeVals, logFl2Vals, slope, intercept, newFl2) {
+            // 如果图表已存在，先销毁它
+            if (regressionChart) {
+                regressionChart.destroy();
+            }
+            
+            // 准备回归线数据点
+            const regressionPoints = [];
+            let minLogPe = Math.min(...logPeVals);
+            let maxLogPe = Math.max(...logPeVals);
+            
+            // 计算新样本点坐标
+            let newPoint = null;
+            if (!isNaN(newFl2) && newFl2 > 0) {
+                const newLogFl2 = log10(newFl2);
+                // 使用回归方程计算对应的PE值：log10(PE) = (log10(FL2) - c) / m
+                const newLogPe = (newLogFl2 - intercept) / slope;
+                
+                // 调试信息
+                console.log('Debug - Point calculation:', {
+                    newFl2,
+                    newLogFl2,
+                    newLogPe,
+                    slope,
+                    intercept
+                });
+                
+                // 创建新样本点对象
+                newPoint = {
+                    x: newLogPe,
+                    y: newLogFl2
+                };
+                
+                // 确保图表范围足够大以显示新点
+                minLogPe = Math.min(minLogPe, newLogPe - 0.5);
+                maxLogPe = Math.max(maxLogPe, newLogPe + 0.5);
+            }
+            
+            // 生成回归线上的多个点以确保线条平滑
+            for (let x = minLogPe - 0.5; x <= maxLogPe + 0.5; x += 0.05) {
+                regressionPoints.push({
+                    x: x,
+                    y: slope * x + intercept // 回归方程：y = mx + c
+                });
+            }
+            
+            // 准备微珠数据点，确保正确的数据类型
+            const scatterPoints = logPeVals.map((logPe, i) => ({
+                x: parseFloat(logPe),
+                y: parseFloat(logFl2Vals[i]),
+                type: beadData[i].type // 保存微珠类型用于工具提示显示
+            }));
+            
+            // 准备图表数据集
+            const datasets = [
+                {
+                    label: '回归线',
+                    data: regressionPoints,
+                    backgroundColor: 'rgba(44, 111, 187, 0.2)', // 浅蓝色填充
+                    borderColor: 'rgba(44, 111, 187, 1)',       // 蓝色边框
+                    borderWidth: 2,
+                    pointRadius: 0,    // 不显示线上的点
+                    fill: false,       // 不填充区域
+                    showLine: true,    // 显示为线
+                    tension: 0         // 无曲线张力（直线）
+                },
+                {
+                    label: '微珠数据点',
+                    data: scatterPoints,
+                    backgroundColor: 'rgba(26, 79, 140, 1)', // 深蓝色点
+                    pointRadius: 8,           // 点大小
+                    pointHoverRadius: 10,     // 悬停时点大小
+                    pointStyle: 'rectRot',    // 旋转矩形点样式
+                }
+            ];
+            
+            // 如果有新样本点，添加到数据集
+            if (newPoint) {
+                console.log('Adding new point:', newPoint);
+                datasets.push({
+                    label: '新样本点',
+                    data: [{
+                        x: parseFloat(newPoint.x),
+                        y: parseFloat(newPoint.y)
+                    }],
+                    backgroundColor: 'rgba(220, 53, 69, 1)', // 红色点
+                    pointRadius: 10,          // 点大小
+                    pointStyle: 'star',       // 星形点样式
+                    pointHoverRadius: 12,     // 悬停时点大小
+                    borderColor: 'rgba(220, 53, 69, 1)', // 红色边框
+                    borderWidth: 2            // 边框宽度
+                });
+            }
+            
+            /**
+             * 创建并配置Chart.js图表
+             * 使用散点图(scatter)类型展示对数线性回归关系
+             */
+            regressionChart = new Chart(ctx, {
+                type: 'scatter', // 散点图类型
+                data: {
+                    datasets: datasets // 数据集
+                },
+                options: {
+                    responsive: true, // 响应式设计
+                    maintainAspectRatio: false, // 不保持固定宽高比
+                    scales: {
+                        /* X轴配置 - log10(PE分子数) */
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'log₁₀(PE分子数)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1); // 刻度标签保留1位小数
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)' // 网格线颜色
+                            }
+                        },
+                        /* Y轴配置 - log10(FL2几何均值) */
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'log₁₀(FL2几何均值)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1); // 刻度标签保留1位小数
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)' // 网格线颜色
+                            }
+                        }
+                    },
+                    /* 图表插件配置 */
+                    plugins: {
+                        /* 工具提示配置 - 鼠标悬停时显示详细信息 */
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    // 回归线不显示工具提示
+                                    if (context.datasetIndex === 0) return null; // Skip regression line tooltip
+                                    
+                                    // 获取点的坐标并转换回原始值（非对数）
+                                    const point = context.parsed;
+                                    const xVal = Math.pow(10, point.x); // 转换回PE分子数
+                                    const yVal = Math.pow(10, point.y); // 转换回FL2值
+                                    
+                                    // 根据数据集类型显示不同的工具提示内容
+                                    if (context.datasetIndex === 1) {
+                                        // 微珠数据点工具提示
+                                        const beadType = context.dataset.data[context.dataIndex].type;
+                                        return `${beadType}微珠: FL2=${yVal.toFixed(2)}, PE=${xVal.toFixed()}`;
+                                    } else if (context.datasetIndex === 2) {
+                                        // 新样本点工具提示
+                                        return `新样本: FL2=${newFl2.toFixed(2)}, PE=${xVal.toFixed()}`;
+                                    }
+                                }
+                            }
+                        },
+                        /* 图例配置 */
+                        legend: {
+                            position: 'top', // 图例位置在顶部
+                        },
+                        /* 图表标题配置 */
+                        title: {
+                            display: true,
+                            text: 'MFI与PE分子数量化关系', // 图表标题
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        /* 注释配置 - 用于显示回归方程 */
+                        annotation: {
+                            annotations: {
+                                equation: {
+                                    type: 'label',
+                                    // 显示回归方程：y = mx + c
+                                    content: `y = ${slope.toFixed(4)}x + ${intercept.toFixed(4)}`,
+                                    position: {
+                                        x: 'min', // 位于X轴最小值处
+                                        y: 'max'  // 位于Y轴最大值处
+                                    },
+                                    backgroundColor: 'rgba(255, 255, 255, 0.8)', // 半透明白色背景
+                                    font: {
+                                        size: 14
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        /**
+         * 重置表单函数 - 将所有输入字段恢复为默认值
+         * 默认值来自BD Quantibrite™ Beads试剂盒的典型数据
+         */
+        function resetForm() {
+            // 设置微珠FL2值默认值
+            document.getElementById('fl2-low').value = '410';      // 低强度微珠FL2值
+            document.getElementById('pe-low').value = '1700';      // 低强度微珠PE分子数
+            document.getElementById('fl2-medlow').value = '4699';  // 中低强度微珠FL2值
+            document.getElementById('pe-medlow').value = '14200';  // 中低强度微珠PE分子数
+            document.getElementById('fl2-medhigh').value = '20301'; // 中高强度微珠FL2值
+            document.getElementById('pe-medhigh').value = '39400'; // 中高强度微珠PE分子数
+            document.getElementById('fl2-high').value = '47956';   // 高强度微珠FL2值
+            document.getElementById('pe-high').value = '133400';   // 高强度微珠PE分子数
+            
+            // 设置其他参数默认值
+            document.getElementById('antibody-ratio').value = '1.0'; // 默认抗体比率为1:1
+            document.getElementById('new-fl2').value = '6666';      // 默认新样本FL2值
+            
+            // 使用默认值计算回归结果
+            calculateRegression();
+        }
+        
+        /**
+         * 事件监听器设置
+         * 为按钮添加点击事件处理函数
+         */
+        document.getElementById('calculate-btn').addEventListener('click', calculateRegression); // 计算按钮点击事件
+        document.getElementById('reset-btn').addEventListener('click', resetForm);              // 重置按钮点击事件
+        
+        /**
+         * 页面加载完成时的初始化函数
+         * 自动填充默认值并计算初始结果
+         */
+        window.onload = function() {
+            resetForm();         // 重置表单为默认值
+            calculateRegression(); // 计算初始回归结果
+        };
+    </script>
+</body>
+</html>
